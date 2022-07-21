@@ -52,19 +52,27 @@ namespace SManagement.Controllers
         {
             return View();
         }
+        [HttpGet]
+        public ViewResult Edit(int id)
+        {
+            Staf staf = _iSRRepository.Get(id);
+            HomeEditViewModel editViewModel = new HomeEditViewModel()
+            {
+                Id = staf.Id,
+                FirstName = staf.FirstName,
+                LastName = staf.LastName,
+                Email = staf.Email,
+                Department = staf.Department,
+                ExPhotoFilePath = staf.PhotoFillPath
+            };
+            return View(editViewModel);
+        }
         [HttpPost]
         public IActionResult Create(HomeCreateViewModel staf)
         {
             if (ModelState.IsValid)
             {
-                string uniqueFileName = string.Empty;
-                if (staf.Photo != null)
-                {
-                    string uploadFolder = Path.Combine(webHost.WebRootPath, "images");
-                    uniqueFileName = Guid.NewGuid().ToString() + "_" + staf.Photo.FileName;
-                    string imaaFilePath = Path.Combine(uploadFolder, uniqueFileName);
-                    staf.Photo.CopyTo(new FileStream(imaaFilePath, FileMode.Create));
-                }
+                string uniqueFileName = ProcessUploadedFile(staf);
                 Staf newstaf = new Staf()
                 {
                     FirstName = staf.FirstName,
@@ -79,6 +87,55 @@ namespace SManagement.Controllers
             }
             return View();
         }
-       
+        [HttpPost]
+        public IActionResult Edit(HomeEditViewModel staf)
+        {
+            if (ModelState.IsValid)
+            {
+                Staf existingStaf = _iSRRepository.Get(staf.Id);
+                existingStaf.FirstName = staf.FirstName;
+                existingStaf.LastName = staf.LastName;
+                existingStaf.Email = staf.Email;
+                existingStaf.Department = staf.Department;
+                if (staf.Photo != null)
+                {
+                    if (staf.ExPhotoFilePath != null)
+                    {
+                       string filePath= Path.Combine(webHost.WebRootPath, "images",staf.ExPhotoFilePath);
+                        System.IO.File.Delete(filePath);
+                    }
+                    existingStaf.PhotoFillPath = ProcessUploadedFile(staf);
+                }
+              
+
+             
+               _iSRRepository.Update(existingStaf);
+                return RedirectToAction("Index");
+            }
+            return View();
+        }
+
+        public IActionResult Delete(int id)
+        {
+             _iSRRepository.Delete(id);
+            return RedirectToAction("index");
+        }
+
+        private string ProcessUploadedFile(HomeCreateViewModel staf)
+        {
+            string uniqueFileName = string.Empty;
+            if (staf.Photo != null)
+            {
+                string uploadFolder = Path.Combine(webHost.WebRootPath, "images");
+                uniqueFileName = Guid.NewGuid().ToString() + "_" + staf.Photo.FileName;
+                string imageFilePath = Path.Combine(uploadFolder, uniqueFileName);
+                using (var fileStream = new FileStream(imageFilePath, FileMode.Create))
+                {
+                    staf.Photo.CopyTo(fileStream);
+                }
+            }
+
+            return uniqueFileName;
+        }
     }
 }
