@@ -32,21 +32,33 @@ namespace SManagement.Controllers
                 Stafs =  _iSRRepository.GetAll()
             };
             return View(viewModel);
-        }  
+        }
         //[Route("[action]/{Id?}")]
-        public ViewResult Details(int? id)
+        public ViewResult Details(int id)
         {
 
-
-            HomeDetailsViewModel viewModel = new HomeDetailsViewModel()
+            Staf staf = _iSRRepository.Get(id);
+            if (staf != null)
             {
-                Staf = _iSRRepository.Get(id??1),
-                Title = "Staf Details"
-            };
-            
-
-            return View(viewModel);
+                HomeDetailsViewModel viewModel = new HomeDetailsViewModel()
+                {
+                    Staf = staf,
+                    Title = "Staf Details"
+                };
+                return View(viewModel);
+            }
+            else
+            {
+                return NotFoundView(id);
+            }
         }
+
+        private ViewResult NotFoundView(int id)
+        {
+            Response.StatusCode = 404;
+            return View("StafNotFound", id);
+        }
+
         [HttpGet]
         public ViewResult Create()
         {
@@ -56,16 +68,23 @@ namespace SManagement.Controllers
         public ViewResult Edit(int id)
         {
             Staf staf = _iSRRepository.Get(id);
-            HomeEditViewModel editViewModel = new HomeEditViewModel()
+            if (staf != null)
             {
-                Id = staf.Id,
-                FirstName = staf.FirstName,
-                LastName = staf.LastName,
-                Email = staf.Email,
-                Department = staf.Department,
-                ExPhotoFilePath = staf.PhotoFillPath
-            };
-            return View(editViewModel);
+                HomeEditViewModel editViewModel = new HomeEditViewModel()
+                {
+                    Id = staf.Id,
+                    FirstName = staf.FirstName,
+                    LastName = staf.LastName,
+                    Email = staf.Email,
+                    Department = staf.Department,
+                    ExPhotoFilePath = staf.PhotoFillPath
+                };
+                return View(editViewModel);
+            }
+            else
+            {
+                return NotFoundView(id);
+            }
         }
         [HttpPost]
         public IActionResult Create(HomeCreateViewModel staf)
@@ -117,8 +136,18 @@ namespace SManagement.Controllers
 
         public IActionResult Delete(int id)
         {
-             _iSRRepository.Delete(id);
-            return RedirectToAction("index");
+            Staf staf = _iSRRepository.Get(id);
+            if (staf != null)
+            {
+                _iSRRepository.Delete(id);
+
+                return RedirectToAction("index");
+            }
+            else
+            {
+                return NotFoundView(id);
+            }
+             
         }
 
         private string ProcessUploadedFile(HomeCreateViewModel staf)
